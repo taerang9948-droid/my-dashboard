@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>영업 대시보드</title>
+<link rel="stylesheet" as="style" crossorigin
+      href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+<style>
+  :root{
+    --blue:#1d4ed8;
+    --blue-mid:#93b4f5;
+    --blue-soft:#dbe6fd;
+    --ink:#0f172a;
+    --muted:#64748b;
+    --faint:#94a3b8;
+    --line:#e8ecf2;
+    --bg:#ffffff;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{
+    font-family:'Pretendard',-apple-system,BlinkMacSystemFont,system-ui,sans-serif;
+    background:var(--bg);
+    color:var(--ink);
+    -webkit-font-smoothing:antialiased;
+    padding:28px 20px 56px;
+  }
+  .wrap{max-width:1180px;margin:0 auto;}
+
+  /* header */
+  .head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:22px;flex-wrap:wrap;}
+  .head h1{font-size:22px;font-weight:800;letter-spacing:-0.02em;}
+  .head .sub{font-size:13px;color:var(--muted);margin-top:4px;}
+  .reload{
+    font-family:inherit;font-size:13px;font-weight:600;color:var(--blue);
+    background:#fff;border:1px solid var(--blue-soft);border-radius:9px;
+    padding:9px 16px;cursor:pointer;transition:background .15s;
+  }
+  .reload:hover{background:var(--blue-soft);}
+  .reload:focus-visible{outline:2px solid var(--blue);outline-offset:2px;}
+
+  /* cards */
+  .cards{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:14px;}
+  .card{border:1px solid var(--line);border-radius:14px;padding:18px 18px 16px;background:#fff;}
+  .card.primary{border-color:var(--blue);box-shadow:0 0 0 3px rgba(29,78,216,.06);}
+  .label{font-size:12.5px;color:var(--muted);font-weight:600;letter-spacing:-0.01em;}
+  .big{font-size:32px;font-weight:800;letter-spacing:-0.03em;margin-top:8px;line-height:1.1;color:var(--blue);}
+  .mid{font-size:24px;font-weight:700;letter-spacing:-0.03em;margin-top:8px;line-height:1.1;}
+  .unit{font-size:14px;font-weight:600;color:var(--faint);margin-left:2px;}
+  .note{font-size:12.5px;color:var(--muted);margin-top:8px;}
+  .note b{color:var(--ink);font-weight:700;}
+  .track{height:8px;border-radius:99px;background:var(--blue-soft);margin-top:12px;overflow:hidden;}
+  .fill{height:100%;border-radius:99px;background:var(--blue);width:0;transition:width .7s cubic-bezier(.22,1,.36,1);}
+
+  /* panels */
+  .grid2{display:grid;grid-template-columns:1.35fr 1fr;gap:14px;margin-bottom:14px;}
+  .grid2.even{grid-template-columns:1fr 1fr;}
+  .panel{border:1px solid var(--line);border-radius:14px;padding:20px;background:#fff;}
+  .panel h2{font-size:15px;font-weight:700;letter-spacing:-0.02em;}
+  .panel .cap{font-size:12.5px;color:var(--muted);margin-top:3px;}
+  .panel-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:14px;}
+  .legend{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);white-space:nowrap;}
+  .dashline{display:inline-block;width:22px;height:0;border-top:2px dashed var(--faint);}
+  svg{display:block;width:100%;height:auto;}
+
+  /* rank */
+  .rank{display:flex;flex-direction:column;gap:14px;}
+  .row{display:flex;gap:12px;align-items:flex-start;}
+  .no{
+    flex:none;width:22px;height:22px;border-radius:7px;background:#f1f5f9;color:var(--muted);
+    font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;margin-top:1px;
+  }
+  .row:first-child .no{background:var(--blue);color:#fff;}
+  .rmain{flex:1;min-width:0;}
+  .rtop{display:flex;justify-content:space-between;gap:10px;align-items:baseline;margin-bottom:6px;}
+  .rname{font-size:14px;font-weight:600;letter-spacing:-0.01em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .ramt{font-size:13.5px;font-weight:700;color:var(--blue);white-space:nowrap;}
+  .rtrack{height:7px;border-radius:99px;background:#f1f5f9;overflow:hidden;}
+  .rfill{height:100%;border-radius:99px;background:var(--blue-mid);width:0;transition:width .7s cubic-bezier(.22,1,.36,1);}
+  .row:first-child .rfill{background:var(--blue);}
+
+  /* states */
+  .state{padding:40px 4px;text-align:center;color:var(--muted);font-size:13.5px;}
+  .state.err{color:#b42318;}
+  .state.err code{display:block;margin-top:8px;font-size:12px;color:var(--muted);word-break:break-all;}
+
+  @media (max-width:900px){
+    .cards{grid-template-columns:repeat(2,1fr);}
+    .grid2,.grid2.even{grid-template-columns:1fr;}
+  }
+  @media (max-width:520px){
+    body{padding:20px 14px 44px;}
+    .big{font-size:27px;}
+    .mid{font-size:21px;}
+    .panel{padding:16px;}
+  }
+  @media (prefers-reduced-motion:reduce){
+    *{transition:none !important;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="head">
+    <div>
+      <h1>영업 대시보드</h1>
+      <div class="sub" id="sub">데이터 불러오는 중…</div>
+    </div>
+    <button class="reload" id="reload" type="button">새로고침</button>
+  </div>
+
+  <div id="app">
+    <div class="state">데이터 불러오는 중…</div>
+  </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const SUPABASE_URL = 'https://dkcxibmqxecwvejuqgsh.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRrY3hpYm1xeGVjd3ZlanVxZ3NoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU2ODg5NTEsImV4cCI6MjEwMTI2NDk1MX0.8UK2ZaT-z2xjkBkXo5Mwj2KNOxL0aJef5fj2dV8eSaM';
+
+const { createClient } = supabase;
+const db = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+/* ---------- 유틸 ---------- */
+const n2 = v => Number(v) || 0;
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => (
+  {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]
+));
+function won(v){
+  const n = n2(v), a = Math.abs(n);
+  if (a >= 1e8) return (n/1e8).toFixed(1).replace(/\.0$/,'') + '억';
+  if (a >= 1e4) return Math.round(n/1e4).toLocaleString('ko-KR') + '만';
+  return Math.round(n).toLocaleString('ko-KR');
+}
+const pct = (a,b) => b > 0 ? (a/b*100) : 0;
+const p1 = v => (Math.round(v*10)/10).toLocaleString('ko-KR');
+
+/* ---------- 월별 매출 막대그래프 ---------- */
+function barChart(rows){
+  const W = 660, H = 330, PL = 14, PR = 14, PT = 34, PB = 42;
+  const n = rows.length;
+  if (!n) return '<div class="state">월별 매출 데이터가 없습니다.</div>';
+
+  const pw = W - PL - PR, ph = H - PT - PB;
+  const max = Math.max(1, ...rows.map(d => Math.max(n2(d.revenue), n2(d.target)))) * 1.2;
+  const slot = pw / n;
+  const bw = Math.min(slot * 0.5, 56);
+  let s = '';
+
+  s += `<line x1="${PL}" y1="${PT+ph}" x2="${W-PR}" y2="${PT+ph}" stroke="#e2e8f0" stroke-width="1"/>`;
+
+  rows.forEach((d,i) => {
+    const cx = PL + slot*i + slot/2;
+    const rv = n2(d.revenue), tg = n2(d.target);
+    const h  = ph * rv / max;
+    const y  = PT + ph - h;
+    const cur = i === n-1;
+
+    s += `<rect x="${(cx-bw/2).toFixed(1)}" y="${y.toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(h,2).toFixed(1)}" rx="5" fill="${cur ? '#1d4ed8' : '#dbe6fd'}"/>`;
+    s += `<text x="${cx.toFixed(1)}" y="${(y-9).toFixed(1)}" text-anchor="middle" font-size="12.5" font-weight="${cur?700:600}" fill="${cur?'#1d4ed8':'#94a3b8'}">${esc(won(rv))}</text>`;
+
+    const ty = PT + ph - ph * tg / max;
+    s += `<line x1="${(PL+slot*i+3).toFixed(1)}" y1="${ty.toFixed(1)}" x2="${(PL+slot*(i+1)-3).toFixed(1)}" y2="${ty.toFixed(1)}" stroke="#94a3b8" stroke-width="1.6" stroke-dasharray="5 4"/>`;
+
+    s += `<text x="${cx.toFixed(1)}" y="${(PT+ph+24).toFixed(1)}" text-anchor="middle" font-size="12.5" font-weight="${cur?700:500}" fill="${cur?'#0f172a':'#94a3b8'}">${esc(d.month)}</text>`;
+  });
+
+  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="월별 매출 막대그래프">${s}</svg>`;
+}
+
+/* ---------- 영업 단계 깔때기 ---------- */
+function funnelChart(rows){
+  const n = rows.length;
+  if (!n) return '<div class="state">파이프라인 데이터가 없습니다.</div>';
+
+  const W = 440, SH = 56, GAP = 32, TOP = 6;
+  const H = TOP + n*SH + (n-1)*GAP + 8;
+  const cx = W/2;
+  const first = Math.max(1, n2(rows[0].count));
+  const wAt = i => {
+    const r = Math.max(0, Math.min(1, n2(rows[i].count)/first));
+    return W * (0.24 + 0.76*r);
+  };
+  let s = '';
+
+  rows.forEach((d,i) => {
+    const y  = TOP + i*(SH+GAP);
+    const wt = wAt(i);
+    const wb = (i < n-1) ? wAt(i+1) : wt*0.9;
+    const op = Math.max(0.38, 1 - i*0.14).toFixed(2);
+
+    s += `<polygon points="${(cx-wt/2).toFixed(1)},${y} ${(cx+wt/2).toFixed(1)},${y} ${(cx+wb/2).toFixed(1)},${y+SH} ${(cx-wb/2).toFixed(1)},${y+SH}" fill="#1d4ed8" fill-opacity="${op}"/>`;
+    s += `<text x="${cx}" y="${y+23}" text-anchor="middle" font-size="13.5" font-weight="700" fill="#ffffff">${esc(d.stage)}</text>`;
+    s += `<text x="${cx}" y="${y+42}" text-anchor="middle" font-size="12.5" font-weight="600" fill="#ffffff" fill-opacity="0.92">${n2(d.count).toLocaleString('ko-KR')}건</text>`;
+
+    if (i < n-1){
+      const cv = pct(n2(rows[i+1].count), n2(rows[i].count));
+      s += `<text x="${cx}" y="${y+SH+21}" text-anchor="middle" font-size="12.5" font-weight="600" fill="#64748b">↓ ${esc(p1(cv))}%</text>`;
+    }
+  });
+
+  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="영업 단계 깔때기">${s}</svg>`;
+}
+
+/* ---------- 순위 목록 ---------- */
+function rankList(rows){
+  if (!rows.length) return '<div class="state">데이터가 없습니다.</div>';
+  const max = Math.max(1, ...rows.map(r => n2(r.amount)));
+  return '<div class="rank">' + rows.map((r,i) => `
+    <div class="row">
+      <div class="no">${i+1}</div>
+      <div class="rmain">
+        <div class="rtop">
+          <span class="rname">${esc(r.name)}</span>
+          <span class="ramt">${esc(won(r.amount))}원</span>
+        </div>
+        <div class="rtrack"><div class="rfill" data-w="${(n2(r.amount)/max*100).toFixed(1)}"></div></div>
+      </div>
+    </div>`).join('') + '</div>';
+}
+
+/* ---------- 렌더 ---------- */
+function render(monthly, pipeline, ranks){
+  const app = document.getElementById('app');
+  const cur = monthly[monthly.length-1] || {};
+  const revenue = n2(cur.revenue);
+  const target  = n2(cur.target);
+  const rate    = pct(revenue, target);
+  const left    = target - revenue;
+
+  const deals = pipeline.length ? n2(pipeline[pipeline.length-1].count) : 0;
+  const aov   = deals > 0 ? revenue/deals : null;
+
+  const persons  = ranks.filter(r => r.kind === 'person');
+  const products = ranks.filter(r => r.kind === 'product');
+
+  const finalCv = pipeline.length > 1
+    ? pct(n2(pipeline[pipeline.length-1].count), n2(pipeline[0].count)) : 0;
+
+  document.getElementById('sub').textContent =
+    (cur.month ? cur.month + ' 기준' : '기준 월 없음') + ' · ' + monthly.length + '개월 누적';
+
+  app.innerHTML = `
+    <div class="cards">
+      <div class="card primary">
+        <div class="label">이번 달 매출</div>
+        <div class="big">${esc(won(revenue))}<span class="unit">원</span></div>
+        <div class="track"><div class="fill" data-w="${Math.min(rate,100).toFixed(1)}"></div></div>
+        <div class="note">목표 대비 <b>${esc(p1(rate))}%</b> 달성</div>
+      </div>
+
+      <div class="card">
+        <div class="label">이번 달 목표</div>
+        <div class="mid">${esc(won(target))}<span class="unit">원</span></div>
+        <div class="note">${left > 0
+          ? `남은 금액 <b>${esc(won(left))}원</b>`
+          : `목표 초과 <b>${esc(won(-left))}원</b>`}</div>
+      </div>
+
+      <div class="card">
+        <div class="label">객단가</div>
+        <div class="mid">${aov === null ? '—' : esc(won(aov)) + '<span class="unit">원</span>'}</div>
+        <div class="note">매출 ÷ 계약 건수</div>
+      </div>
+
+      <div class="card">
+        <div class="label">계약 건수</div>
+        <div class="mid">${deals.toLocaleString('ko-KR')}<span class="unit">건</span></div>
+        <div class="note">${pipeline.length ? esc(pipeline[pipeline.length-1].stage) + ' 단계' : '단계 없음'}</div>
+      </div>
+    </div>
+
+    <div class="grid2">
+      <div class="panel">
+        <div class="panel-head">
+          <div>
+            <h2>월별 매출</h2>
+            <div class="cap">이번 달은 진한 파랑으로 표시</div>
+          </div>
+          <div class="legend"><span class="dashline"></span>목표</div>
+        </div>
+        ${barChart(monthly)}
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">
+          <div>
+            <h2>영업 단계</h2>
+            <div class="cap">단계 사이 숫자는 다음 단계 전환율</div>
+          </div>
+        </div>
+        ${funnelChart(pipeline)}
+        <div class="note" style="text-align:center;margin-top:14px;font-size:13px;">
+          최종 전환율 <b style="color:var(--blue);font-size:15px;">${esc(p1(finalCv))}%</b>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid2 even">
+      <div class="panel">
+        <div class="panel-head"><div><h2>담당자별 순위</h2><div class="cap">매출 기준 내림차순</div></div></div>
+        ${rankList(persons)}
+      </div>
+      <div class="panel">
+        <div class="panel-head"><div><h2>상품별 순위</h2><div class="cap">매출 기준 내림차순</div></div></div>
+        ${rankList(products)}
+      </div>
+    </div>
+  `;
+
+  requestAnimationFrame(() => {
+    document.querySelectorAll('[data-w]').forEach(el => { el.style.width = el.dataset.w + '%'; });
+  });
+}
+
+/* ---------- 데이터 ---------- */
+async function load(){
+  const app = document.getElementById('app');
+  app.innerHTML = '<div class="state">데이터 불러오는 중…</div>';
+  try {
+    const [m, p, r] = await Promise.all([
+      db.from('sales_monthly').select('*').order('sort_order', { ascending: true }),
+      db.from('sales_pipeline').select('*').order('sort_order', { ascending: true }),
+      db.from('sales_rank').select('*').order('amount', { ascending: false })
+    ]);
+    const bad = m.error || p.error || r.error;
+    if (bad) throw bad;
+    render(m.data || [], p.data || [], r.data || []);
+  } catch (e) {
+    document.getElementById('sub').textContent = '연결 실패';
+    app.innerHTML = '<div class="state err">데이터를 불러오지 못했습니다. 테이블 이름과 읽기 권한(RLS)을 확인한 뒤 새로고침하세요.'
+      + '<code>' + esc(e && e.message ? e.message : e) + '</code></div>';
+  }
+}
+
+document.getElementById('reload').addEventListener('click', load);
+load();
+</script>
+</body>
+</html>
